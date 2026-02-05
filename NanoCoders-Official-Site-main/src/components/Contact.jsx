@@ -42,21 +42,43 @@ function Contact() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const [loading, setLoading] = useState(false); // Add to useState
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     if (!validateForm()) return;
 
-    console.log("Submitted Data:", formData);
+    setLoading(true);
 
-    alert("Your message has been sent successfully");
+    try {
+      const res = await fetch("http://localhost:5000/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
-    setFormData({
-      name: "",
-      phone: "",
-      email: "",
-      message: "",
-    });
+      const data = await res.json();
+
+      if (res.ok) {
+        alert("✅ Your message has been sent successfully!");
+        setFormData({ name: "", phone: "", email: "", message: "" });
+        setErrors({});
+      } else {
+        // Handle validation errors from backend
+        if (data.errors) {
+          setErrors(data.errors);
+        } else {
+          alert(`❌ ${data.message || "Error sending message"}`);
+        }
+      }
+    } catch (err) {
+      console.error("Contact form error:", err);
+      alert(
+        `❌ ${err.message || "Network error. Please check if backend is running on port 5000."}`,
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -179,9 +201,14 @@ function Contact() {
             </div>
             <button
               type="submit"
-              className="w-full mt-4 bg-[#5bb5ea] text-[#132c56] font-medium py-4 rounded-full transition-all duration-300 hover:bg-[#f2bf11] shadow-[0_6px_16px_rgba(242,191,17,0.65)] hover:shadow-[0_8px_20px_rgba(91,181,234,0.65)]"
+              disabled={loading}
+              className={`w-full mt-4 bg-[#5bb5ea] text-[#132c56] font-medium py-4 rounded-full transition-all duration-300 shadow-[0_6px_16px_rgba(242,191,17,0.65)] hover:shadow-[0_8px_20px_rgba(91,181,234,0.65)] ${
+                loading
+                  ? "opacity-50 cursor-not-allowed bg-[#5bb5ea]/70 hover:bg-[#5bb5ea]/70"
+                  : "hover:bg-[#f2bf11]"
+              }`}
             >
-              Submit
+              {loading ? "Sending..." : "Submit"}
             </button>
           </form>
         </div>
